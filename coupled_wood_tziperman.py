@@ -19,9 +19,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# Ensure modules are imported
-sys.path.append(os.path.expanduser("~/Rannsoknir/WoodAMOC"))
-sys.path.append(os.path.expanduser("~/Rannsoknir/SeaIceSwitch8Box"))
+# Ensure local directory is in path for standalone portability
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
 from wood_box_model import WoodBoxModel, CALIBRATIONS, CONV_PER_YEAR
 from unesco import unesco_full_density

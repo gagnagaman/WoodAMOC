@@ -1,4 +1,4 @@
-# Wood et al. (2019) AMOC 5-Box Model
+# Wood et al. (2019) AMOC 5-Box Model & Coupled Atmospheric Extensions
 
 A standalone Python implementation of the 5-box dynamical model of the Atlantic Meridional Overturning Circulation (AMOC) described in:
 
@@ -7,93 +7,119 @@ A standalone Python implementation of the 5-box dynamical model of the Atlantic 
 > **Climate Dynamics**, 53(11), 6815–6834.  
 > [DOI: 10.1007/s00382-019-04956-1](https://doi.org/10.1007/s00382-019-04956-1)
 
+This repository includes both the **uncoupled box model** (with all 7 climate model calibrations from Table 1 of the paper) and an **extended coupled version** featuring an active atmospheric energy balance, Clausius-Clapeyron moisture transport, and a polar sea-ice switch adapted from the [Tziperman-Gildor model](https://github.com/gagnagaman/Tziperman_Gildor).
+
 ---
 
-## 1. Overview of the Model
+## 1. Overview of the 5-Box AMOC Model
 
-The model partitions the global ocean into five contiguous compartments corresponding to major water masses:
-- **N (North Atlantic):** Deep water formation region (NADW) and the Arctic.
-- **T (Atlantic Thermocline):** Upper subtropical Atlantic.
-- **S (Southern Ocean):** Fresh surface Southern Ocean and return Antarctic Intermediate Water (AAIW).
-- **IP (Indo-Pacific):** Indo-Pacific thermocline (carrying warm return flow).
+The model partitions the global ocean into five contiguous compartments representing dominant large-scale water masses:
+- **N (North Atlantic):** Deep water formation region (NADW) and Arctic.
+- **T (Atlantic Thermocline):** Subtropical North Atlantic.
+- **S (Southern Ocean):** Surface Southern Ocean and Antarctic Intermediate Water (AAIW).
+- **IP (Indo-Pacific):** Indo-Pacific thermocline.
 - **B (Bottom Water):** Southward-flowing NADW and Circumpolar Deep Water (CDW).
 
 ### Flow Formulation ($q$)
-AMOC strength $q$ is governed by the North-South density gradient:
+AMOC strength $q$ is driven by the North-South density gradient:
 $$q = \lambda [\alpha (T_S - T_N) + \beta (S_N - S_S)]$$
 
 Incorporating the linear North Atlantic temperature feedback $T_N = \mu q + T_0$:
 $$q = \frac{\lambda}{1 + \lambda \alpha \mu} \left[\alpha(T_S - T_0) + \beta(S_N - S_S)\right]$$
 
-### Dynamics ($dS_i / dt$)
-Salt conservation determines salinity in each box via:
+### Salinity Dynamics ($dS_i / dt$)
+Salt conservation governs salinity in each box via:
 - Overturning advection ($q$)
 - Cold Water Path ($\gamma$) vs. Warm Water Path ($1 - \gamma$)
 - Subtropical gyre exchange ($K_N, K_S, K_{IP}$)
 - Southern Ocean vertical mixing ($\eta$)
 - Surface freshwater fluxes ($F_i$) and hosing perturbation ($H \cdot A_i$)
 
-Both forward overturning ($q \ge 0$) and reversed circulation ($q < 0$) regimes are implemented as defined in Equations (2)–(11) of the paper.
+Both forward overturning ($q \ge 0$, Eqs. 2–6) and reversed circulation ($q < 0$, Eqs. 7–11) regimes are implemented.
 
 ---
 
-## 2. Calibrations Included (Table 1)
+## 2. Model Calibrations (Table 1)
 
-All parameter sets from Table 1 of the paper are provided:
+All parameter sets from Table 1 of Wood et al. (2019) are pre-loaded:
 1. `FAMOUSA_1xCO2` (Baseline FAMOUS AOGCM pre-industrial run)
-2. `FAMOUSB_1xCO2` (Updated FAMOUS pre-industrial configuration)
+2. `FAMOUSB_1xCO2` (Updated FAMOUS pre-industrial run)
 3. `FAMOUSB_2xCO2` (FAMOUS at $2\times\text{CO}_2$)
-4. `HadGEM2AO_1xCO2` (CMIP5-generation HadGEM2-AO pre-industrial)
+4. `HadGEM2AO_1xCO2` (HadGEM2-AO pre-industrial)
 5. `HadGEM2AO_2xCO2` (HadGEM2-AO at $2\times\text{CO}_2$)
 6. `HadGEM2AO_4xCO2` (HadGEM2-AO at $4\times\text{CO}_2$)
-7. `DePreSys_1999_2008` (Observation-assimilating ocean reanalysis)
+7. `DePreSys_1999_2008` (Ocean reanalysis state)
 
 ---
 
-## 3. Directory Structure
+## 3. Coupled Atmosphere & Sea-Ice Extension
+
+In Section 5.1 of Wood et al. (2019), the authors noted that omitting interactive atmospheric freshwater feedbacks causes box models to underestimate the AMOC sensitivity to freshwater forcing.
+
+In `coupled_wood_tziperman.py`, the 5-box ocean is coupled to the atmospheric moisture transport and sea-ice switch from [Gildor & Tziperman (2001)](https://github.com/gagnagaman/Tziperman_Gildor):
+1. **Dynamic Moisture Transport ($F_N$ & $F_T$):** Atmospheric water vapor capacity follows the **Clausius-Clapeyron** relation ($q_{\text{spec}} \propto \exp(-B/\theta)$). Poleward vapor transport from the subtropics dynamically sets the North Atlantic freshwater input:
+   $$F_N(t) = K_{Wa} \frac{\theta_T - \theta_N}{L} q_{\text{spec}}$$
+2. **Polar Sea-Ice Switch:** When the AMOC collapses and $T_N \le 1^\circ\text{C}$, sea ice forms. This triggers:
+   - **Albedo feedback:** surface albedo jumps from $\alpha_S = 0.07$ to $\alpha_{SI} = 0.65$.
+   - **Insulation & Hydrological shutoff:** ocean heat loss and local evaporation are suppressed.
+
+### Comparison Results:
+| Model Configuration | Collapse Threshold $H_{\text{crit}}$ | Recovery Threshold $H_{\text{crit}}$ |
+|---|---|---|
+| **Uncoupled Wood (2019)** | **0.481 Sv** | **-0.147 Sv** |
+| **Coupled Wood + Atmosphere & Sea Ice** | **0.305 Sv** | **-0.164 Sv** |
+
+![Wood Tziperman Comparison](figures/wood_tziperman_comparison.png)
+
+---
+
+## 4. Repository Structure
 
 ```
-Rannsoknir/WoodAMOC/
+WoodAMOC/
 ├── wood_box_model.py          # Core Wood et al. (2019) model classes and equations
-├── simulate.py                # CLI tool to run uncoupled hysteresis experiments
-├── plot_comparison.py         # Recreates Figure 5 multi-model comparison
-├── coupled_wood_tziperman.py  # Coupled Wood AMOC + Gildor-Tziperman Atmosphere & Sea Ice
-├── figures/                   # Output directory for generated PNG figures
-└── README.md                  # Model documentation
+├── simulate.py                # CLI script to run uncoupled hysteresis experiments
+├── plot_comparison.py         # Multi-model comparison across CO2 scenarios (Fig. 5)
+├── coupled_wood_tziperman.py  # Coupled Wood AMOC + Tziperman Atmosphere & Sea-Ice
+├── unesco.py                  # UNESCO (1981) seawater equation of state
+├── figures/                   # Diagnostic PNG figures
+│   ├── amoc_hysteresis_FAMOUSA_1xCO2.png
+│   ├── salinity_evolution_FAMOUSA_1xCO2.png
+│   ├── figure5_comparison.png
+│   └── wood_tziperman_comparison.png
+└── README.md                  # Documentation
 ```
 
 ---
 
-## 4. How to Run
+## 5. Usage
 
-### Run single simulation (FAMOUSA baseline):
+### Run Baseline Uncoupled Simulation (FAMOUSA):
 ```bash
 python3 simulate.py --model FAMOUSA_1xCO2
 ```
-
-### Run Coupled AMOC + Tziperman-Gildor Atmosphere Model:
-```bash
-python3 coupled_wood_tziperman.py
-```
-This runs a side-by-side comparison of the **Uncoupled Wood Model** vs. the **Coupled Wood + Atmosphere & Sea-Ice Model**, plotting the hysteresis curve, dynamic moisture flux $F_N(t)$, temperature $T_N(t)$, and sea-ice switch activation into `figures/wood_tziperman_comparison.png`.
-This performs a quasi-equilibrium hosing experiment (ramp up $H$ to $+1.0\text{ Sv}$ at $5\times 10^{-4}\text{ Sv/yr}$, then ramp down to $-0.4\text{ Sv}$), calculates $H_{\text{crit}}$, and saves:
+Outputs $H_{\text{crit}}$ collapse and recovery values, and saves:
 - `figures/amoc_hysteresis_FAMOUSA_1xCO2.png`
 - `figures/salinity_evolution_FAMOUSA_1xCO2.png`
 
-### Run all calibrations and print summary table:
+### Run All 7 Calibrations:
 ```bash
 python3 simulate.py --model all
 ```
 
-### Reproduce Figure 5 (Threshold shifts under warming):
+### Reproduce Multi-Model Comparison (Figure 5 in Paper):
 ```bash
 python3 plot_comparison.py
 ```
 Outputs `figures/figure5_comparison.png`.
 
+### Run Coupled Wood + Tziperman-Gildor Atmosphere Model:
+```bash
+python3 coupled_wood_tziperman.py
+```
+Outputs `figures/wood_tziperman_comparison.png`.
+
 ---
 
-## 5. Typical Baseline Results (FAMOUSA)
-- Initial AMOC strength: **$17.14\text{ Sv}$**
-- Collapse threshold ($H_{\text{crit}}$): **$0.481\text{ Sv}$** (matches $\approx 0.48\text{ Sv}$ reported in Section 3.1)
-- Recovery threshold: **$-0.147\text{ Sv}$** (recovers when $H \lesssim -0.1\text{ Sv}$)
+## Companion Repository
+- **[Tziperman_Gildor](https://github.com/gagnagaman/Tziperman_Gildor)**: Standalone 8-box coupled ocean-atmosphere-sea ice model based on Gildor & Tziperman (2001).
