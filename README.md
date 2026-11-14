@@ -54,11 +54,12 @@ All parameter sets from Table 1 of the paper are provided:
 
 ```
 Rannsoknir/WoodAMOC/
-├── wood_box_model.py     # Core model classes, equations, and solver
-├── simulate.py           # CLI tool to run hysteresis experiment and plot
-├── plot_comparison.py    # Recreates Figure 5 multi-model comparison
-├── figures/              # Output directory for generated PNG figures
-└── README.md             # Model documentation
+├── wood_box_model.py          # Core Wood et al. (2019) model classes and equations
+├── simulate.py                # CLI tool to run uncoupled hysteresis experiments
+├── plot_comparison.py         # Recreates Figure 5 multi-model comparison
+├── coupled_wood_tziperman.py  # Coupled Wood AMOC + Gildor-Tziperman Atmosphere & Sea Ice
+├── figures/                   # Output directory for generated PNG figures
+└── README.md                  # Model documentation
 ```
 
 ---
@@ -69,6 +70,12 @@ Rannsoknir/WoodAMOC/
 ```bash
 python3 simulate.py --model FAMOUSA_1xCO2
 ```
+
+### Run Coupled AMOC + Tziperman-Gildor Atmosphere Model:
+```bash
+python3 coupled_wood_tziperman.py
+```
+This runs a side-by-side comparison of the **Uncoupled Wood Model** vs. the **Coupled Wood + Atmosphere & Sea-Ice Model**, plotting the hysteresis curve, dynamic moisture flux $F_N(t)$, temperature $T_N(t)$, and sea-ice switch activation into `figures/wood_tziperman_comparison.png`.
 This performs a quasi-equilibrium hosing experiment (ramp up $H$ to $+1.0\text{ Sv}$ at $5\times 10^{-4}\text{ Sv/yr}$, then ramp down to $-0.4\text{ Sv}$), calculates $H_{\text{crit}}$, and saves:
 - `figures/amoc_hysteresis_FAMOUSA_1xCO2.png`
 - `figures/salinity_evolution_FAMOUSA_1xCO2.png`
